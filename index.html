@@ -2,63 +2,59 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>St Cuthbert Gospel — Replica Page Generator</title>
+<title>St Cuthbert Gospel — replica PDF generator</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-  :root{
-    --bg:#12100e; --panel:#1b1815; --panel2:#221e1a; --line:#3a332b;
-    --ink:#ece5d8; --muted:#a89d8e; --accent:#c9a468;
-  }
+  :root{--bg:#12100e;--panel:#1b1815;--panel2:#221e1a;--line:#3a332b;--ink:#ece5d8;--muted:#a89d8e;--accent:#c9a468}
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:13.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-  header{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;padding:14px 20px;
-    border-bottom:1px solid var(--line);background:linear-gradient(#1c1815,#14110e)}
-  header h1{margin:0;font:600 15px/1.3 Georgia,"Times New Roman",serif;letter-spacing:.04em}
+  body{margin:0;background:var(--bg);color:var(--ink);font:13.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+  header{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;padding:12px 18px;border-bottom:1px solid var(--line);background:#181512}
+  header h1{margin:0;font:600 15px Georgia,"Times New Roman",serif;letter-spacing:.04em}
   header p{margin:0;color:var(--muted);font-size:12px}
-  main{display:grid;grid-template-columns:392px minmax(0,1fr);height:calc(100dvh - 56px)}
-  form{overflow:auto;padding:16px 18px 48px;border-right:1px solid var(--line);background:var(--panel)}
-  fieldset{border:1px solid var(--line);border-radius:10px;padding:10px 12px 14px;margin:0 0 14px;background:var(--panel2)}
+  main{display:grid;grid-template-columns:390px minmax(0,1fr);height:calc(100dvh - 53px)}
+  form{overflow:auto;padding:14px 16px 40px;border-right:1px solid var(--line);background:var(--panel)}
+  fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 11px 12px;margin:0 0 12px;background:var(--panel2)}
   legend{padding:0 6px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
-  label{display:block;margin:9px 0 0;font-size:11.5px;color:var(--muted)}
-  label.check{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:12.5px;margin-top:11px}
+  label{display:block;margin:8px 0 0;font-size:11.5px;color:var(--muted)}
+  label.check{display:flex;gap:8px;align-items:center;color:var(--ink);font-size:12.5px;margin-top:10px}
   input[type=text],input[type=number],select,textarea{width:100%;margin-top:4px;background:#100e0c;color:var(--ink);
-    border:1px solid var(--line);border-radius:7px;padding:7px 9px;font:inherit}
-  input[type=color]{width:100%;height:32px;margin-top:4px;background:#100e0c;border:1px solid var(--line);border-radius:7px;padding:2px}
+    border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:inherit}
+  input[type=color]{width:100%;height:30px;margin-top:4px;background:#100e0c;border:1px solid var(--line);border-radius:7px;padding:2px}
   input:focus,select:focus,textarea:focus{outline:2px solid rgba(201,164,104,.45);outline-offset:1px}
-  textarea{min-height:240px;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical;white-space:pre}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .hint{margin:0 0 6px;font-size:11.5px;color:var(--muted)}
-  .hint code{background:#100e0c;border:1px solid var(--line);border-radius:4px;padding:1px 4px;font-size:11px}
-  .actions{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 10px}
-  button,.btn{appearance:none;border:1px solid var(--line);background:#26211c;color:var(--ink);
-    border-radius:8px;padding:8px 13px;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-block}
+  textarea{min-height:230px;font:12.5px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;resize:vertical;white-space:pre}
+  .r2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .r3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .r4{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .hint{margin:0 0 4px;font-size:11.5px;color:var(--muted)}
+  .hint code{background:#100e0c;border:1px solid var(--line);border-radius:4px;padding:0 3px;font-size:11px}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
+  button,.btn{appearance:none;border:1px solid var(--line);background:#26211c;color:var(--ink);border-radius:8px;
+    padding:8px 12px;font:inherit;font-size:12.5px;cursor:pointer;text-decoration:none;display:inline-block}
   button:hover,.btn:hover{background:#312a23;border-color:#4a4036}
   button.primary{background:var(--accent);border-color:var(--accent);color:#1a1409;font-weight:600}
   button.primary:hover{background:#d8b47a}
   .btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
-  .status{margin:0;font-size:12px;color:var(--muted)}
+  .status{margin:6px 0 0;font-size:12px;color:var(--muted);white-space:pre-wrap}
+  .status.err{color:#f2a6a6}
   .warn{margin:8px 0 0;font-size:12px;color:#e8b36b;background:rgba(232,179,107,.08);
-    border:1px solid rgba(232,179,107,.3);border-radius:8px;padding:8px 10px}
-  .preview{padding:16px;background:#0c0b0a;display:grid}
+    border:1px solid rgba(232,179,107,.32);border-radius:8px;padding:7px 9px}
+  .preview{padding:14px;background:#0c0b0a;display:grid}
   iframe{width:100%;height:100%;border:1px solid var(--line);border-radius:10px;background:#fff}
   @media (max-width:900px){
     main{grid-template-columns:1fr;height:auto}
     form{border-right:0;border-bottom:1px solid var(--line)}
-    .preview{height:72vh;padding:10px}
+    .preview{height:72vh;padding:8px}
   }
 </style>
 </head>
 <body>
 <header>
-  <h1>St&nbsp;Cuthbert&nbsp;Gospel — replica page generator</h1>
+  <h1>St&nbsp;Cuthbert&nbsp;Gospel — replica PDF generator</h1>
   <p>92 × 138 mm pages (1 : 1.5) · mirrored margins · Add MS 89000</p>
 </header>
 
 <main>
-  <form id="form" autocomplete="off" onsubmit="return false">
+  <form id="form" autocomplete="off" novalidate>
     <fieldset>
       <legend>Title page</legend>
       <label class="check"><input type="checkbox" id="titlePage" checked> Include a title page</label>
@@ -72,7 +68,7 @@
     <fieldset>
       <legend>Content — Markdown</legend>
       <p class="hint">Each <code>#</code> heading starts a new page. <code>##</code>/<code>###</code> are subheads,
-        <code>&gt;</code> quotes, <code>-</code> lists, <code>\pagebreak</code> forces a page break.</p>
+        <code>&gt;</code> quotes, <code>-</code> lists, <code>\pagebreak</code> forces a break.</p>
       <textarea id="md" spellcheck="false"></textarea>
     </fieldset>
 
@@ -86,34 +82,33 @@
           <option value="2.5">2.5× — 230 × 345 mm</option>
         </select>
       </label>
-      <div class="row3">
-        <label>Body (pt)<input type="number" id="bodySize" step="0.1" min="5" max="16" value="8.4"></label>
-        <label>Leading<input type="number" id="lead" step="0.05" min="1" max="2.5" value="1.55"></label>
+      <div class="r3">
+        <label>Body (pt)<input type="number" id="bodySize" step="0.1" min="4" max="24" value="8.4"></label>
+        <label>Leading<input type="number" id="lead" step="0.05" min="1" max="3" value="1.55"></label>
         <label>1st-line ind.<input type="number" id="firstIndent" step="0.5" min="0" max="8" value="0"></label>
       </div>
-      <div class="row4">
-        <label>Top<input type="number" id="mTop" step="0.5" min="4" value="13"></label>
-        <label>Bottom<input type="number" id="mBot" step="0.5" min="4" value="15"></label>
-        <label>Inner<input type="number" id="mIn" step="0.5" min="4" value="14"></label>
-        <label>Outer<input type="number" id="mOut" step="0.5" min="4" value="11"></label>
+      <div class="r4">
+        <label>Top<input type="number" id="mTop" step="0.5" min="3" value="13"></label>
+        <label>Bottom<input type="number" id="mBot" step="0.5" min="3" value="15"></label>
+        <label>Inner<input type="number" id="mIn" step="0.5" min="3" value="14"></label>
+        <label>Outer<input type="number" id="mOut" step="0.5" min="3" value="11"></label>
       </div>
       <label>Typeface
         <select id="font">
           <option value="times" selected>Times — built-in serif</option>
           <option value="helvetica">Helvetica — built-in sans</option>
           <option value="courier">Courier — built-in mono</option>
-          <option value="unicode">DejaVu Serif — Unicode (downloaded)</option>
         </select>
       </label>
       <label class="check"><input type="checkbox" id="justify" checked> Justify text</label>
       <label class="check"><input type="checkbox" id="pageNums" checked> Page numbers</label>
       <label class="check"><input type="checkbox" id="chapterRecto"> Chapters open on a right-hand page</label>
       <label class="check"><input type="checkbox" id="upperTitles" checked> Titles in capitals</label>
-      <div class="row2">
+      <div class="r2">
         <label>Ink<input type="color" id="ink" value="#1b1712"></label>
         <label>Paper<input type="color" id="paper" value="#f7f1e3"></label>
       </div>
-      <label class="check"><input type="checkbox" id="paperOn"> Tint the page background</label>
+      <label class="check"><input type="checkbox" id="paperTint"> Tint the page background</label>
     </fieldset>
 
     <div class="actions">
@@ -122,28 +117,53 @@
       <button type="button" id="sample">Sample text</button>
       <button type="button" id="reset">Reset</button>
     </div>
-    <p class="status" id="status">Ready.</p>
+    <p class="status" id="status">Starting…</p>
     <p class="warn" id="warn" hidden></p>
   </form>
 
   <section class="preview"><iframe id="frame" title="PDF preview"></iframe></section>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+        onerror="document.getElementById('status').textContent='Could not load jsPDF from the CDN — check your connection and reload.';document.getElementById('status').className='status err';"></script>
 <script>
 (function () {
   'use strict';
 
+  /* ------------------------------------------------------------------ *
+   * 0. constants & helpers
+   * ------------------------------------------------------------------ */
   const $ = id => document.getElementById(id);
   const PT2MM = 25.4 / 72;
-  const PAGE_W = 92;      // mm  — St Cuthbert Gospel
-  const PAGE_H = 138;     // mm  — ratio 1 : 1.5
+  const PAGE_W = 92;          // mm — St Cuthbert Gospel, Add MS 89000
+  const PAGE_H = 138;         // mm — 1 : 1.5
   const BULLET = '\u2022';
-  const FONT_CDN = 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/';
-  const state = { url: null, timer: null, fontCache: null };
+  const FIELDS = ['titlePage','tTitle','tSub','tBy','tPlace','tDate','md','scale','bodySize','lead',
+                  'firstIndent','mTop','mBot','mIn','mOut','font','justify','pageNums',
+                  'chapterRecto','upperTitles','ink','paper','paperTint'];
+
+  const state = { url: null, timer: null };
+  const DEFAULTS = {};
+  const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const round = n => Math.round(n * 10) / 10;
+  const slug = s => (s || 'st-cuthbert-gospel').toLowerCase().normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'document';
+
+  function hexToRgb(h) {
+    const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h || '');
+    if (!m) return [0, 0, 0];
+    return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+  }
+
+  function setStatus(msg, isErr) {
+    const el = $('status');
+    el.textContent = msg;
+    el.className = 'status' + (isErr ? ' err' : '');
+  }
 
   /* ------------------------------------------------------------------ *
-   * Markdown — inline
+   * 1. Markdown — inline runs [{t, b, i, mono}]
    * ------------------------------------------------------------------ */
   function parseInline(src) {
     const out = [];
@@ -152,11 +172,10 @@
     let i = 0;
     while (i < src.length) {
       const c = src[i];
-      const prev = i ? src[i - 1] : ' ';
       if (c === '\\' && i + 1 < src.length) { flush(); buf += src[i + 1]; i += 2; continue; }
       if (c === '`') {
         const j = src.indexOf('`', i + 1);
-        if (j > i + 1) { flush(); out.push({ t: src.slice(i + 1, j), mono: true, b: bold, i: ital }); i = j + 1; continue; }
+        if (j > i + 1) { flush(); out.push({ t: src.slice(i + 1, j), mono: true }); i = j + 1; continue; }
       }
       if ((c === '*' || c === '_') && src[i + 1] === c) {
         if (c === '_' && /[A-Za-z0-9]/.test(src[i - 1] || '')) { buf += c; i++; continue; }
@@ -173,12 +192,13 @@
   }
 
   const plain = s => parseInline(s).map(r => r.t).join('');
+  const roleOf = r => r.mono ? 'mono' : (r.b && r.i ? 'bi' : r.b ? 'b' : r.i ? 'i' : 'r');
 
   /* ------------------------------------------------------------------ *
-   * Markdown — blocks
+   * 2. Markdown — blocks
    * ------------------------------------------------------------------ */
   function parseMarkdown(md) {
-    const lines = md.replace(/\r\n?/g, '\n').split('\n');
+    const lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
     const blocks = [];
     let para = [], i = 0;
     const flushPara = () => { if (para.length) { blocks.push({ type: 'p', text: para.join(' ') }); para = []; } };
@@ -187,54 +207,597 @@
       const raw = lines[i];
       const t = raw.trim();
 
-      if (t.startsWith('```')) {                       // fenced code
-        flush();
+      if (t.slice(0, 3) === '```') {                        // fenced code
+        flushPara();
         const buf = [];
         i++;
-        while (i < lines.length && !lines[i].trim().startsWith('```')) buf.push(lines[i++]);
+        while (i < lines.length && lines[i].trim().slice(0, 3) !== '```') buf.push(lines[i++]);
         i++;
-        blocks.push({ type: 'code', text: buf.join(' ') });
+        blocks.push({ type: 'code', text: buf.join(' ').replace(/\s+/g, ' ').trim() });
         continue;
       }
 
-      if (!t) { flush(); i++; continue; }
+      if (!t) { flushPara(); i++; continue; }
 
       if (/^(\\pagebreak|\[\[pagebreak\]\]|<!--\s*pagebreak\s*-->)$/i.test(t)) {
-        flush(); blocks.push({ type: 'pagebreak' }); i++; continue;
+        flushPara(); blocks.push({ type: 'pagebreak' }); i++; continue;
       }
 
       if (/^(\*\s*){3,}$/.test(t) || /^(-\s*){3,}$/.test(t) || /^(_\s*){3,}$/.test(t)) {
-        flush(); blocks.push({ type: 'hr' }); i++; continue;
+        flushPara(); blocks.push({ type: 'hr' }); i++; continue;
       }
 
       const h = /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(t);
       if (h) {
-        flush();
+        flushPara();
         blocks.push({ type: 'h' + Math.min(h[1].length, 3), text: h[2] });
         i++; continue;
       }
 
-      if (/^\s*>\s?/.test(src(raw))) {
-        flush();
+      if (/^>\s?/.test(t)) {                                // block quote
+        flushPara();
         const buf = [];
-        while (i < src.length && /^\s*>\s?/.test(raw)) {
-          buf.push(raw.trim().replace(/^>\s?/, ''));
-          i++; break;
+        while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
+          buf.push(lines[i].trim().replace(/^>\s?/, ''));
+          i++;
         }
-      }
-      else if (/^\s*>\s?/.test(src(src.line))) {
-        // placeholder
+        blocks.push({ type: 'quote', text: buf.join(' ') });
+        continue;
       }
 
-      const li = /^(\s*)([-+*]|\d+[.)])\s+(.*)$/.exec(src);
-      // (list handling below)
-      i = i;
-      i = i;
-      if (false) {}
-      break;
+      const li = /^(\s*)([-+*]|\d+[.)])\s+(.*)$/.exec(raw);
+      if (li) {
+        flushPara();
+        blocks.push({
+          type: 'li',
+          ordered: /^\d/.test(li[2]),
+          depth: Math.min(3, Math.floor(li[1].replace(/\t/g, '  ').length / 2)),
+          text: li[3]
+        });
+        i++; continue;
+      }
+
+      para.push(t);
+      i++;
     }
-    return out;
+    flushPara();
+    return blocks;
   }
+
+  /* ------------------------------------------------------------------ *
+   * 3. Page engine
+   * ------------------------------------------------------------------ */
+  class Book {
+    constructor(pdf, cfg) {
+      this.pdf = pdf;
+      this.cfg = cfg;
+      this.W = PAGE_W * cfg.scale;
+      this.H = PAGE_H * cfg.scale;
+      this.page = 0;
+      this.started = false;
+      this.y = 0;
+      this._mc = new Map();
+    }
+
+    get s() { return this.cfg.scale; }
+
+    /* mirrored margins: page 0 is a recto (right-hand) page */
+    m() {
+      const c = this.cfg, s = c.scale, inner = this.page % 2 === 0;
+      return {
+        t: c.mTop * s,
+        b: c.mBot * s,
+        l: (inner ? c.mIn : c.mOut) * s,
+        r: (inner ? c.mOut : c.mIn) * s
+      };
+    }
+
+    textW() { const m = this.m(); return this.W - m.l - m.r; }
+    bottom() { return this.H - this.m().b; }
+    contentH() { return this.H - (this.cfg.mTop + this.cfg.mBot) * this.s; }
+
+    setFont(role, size) {
+      const c = this.cfg;
+      const map = { r: 'normal', n: 'normal', b: 'bold', i: 'italic', bi: 'bolditalic', mono: 'normal' };
+      const fam = role === 'mono' ? 'courier' : c.fontName;
+      this.pdf.setFont(fam, map[role] || 'normal');
+      this.pdf.setFontSize(size * c.scale);
+      this.pdf.setTextColor(c.ink[0], c.ink[1], c.ink[2]);
+    }
+
+    /* cached width in mm for the current font, at `size` pt, scaled */
+    measure(text, role, size) {
+      const fs = Math.round(size * 100);
+      const key = this.cfg.fontName + '|' + role + '|' + fs + '|' + text;
+      let w = this._mc.get(key);
+      if (w === undefined) {
+        this.setFont(role, size);
+        w = this.pdf.getTextWidth(text);   // mm
+        this._mc.set(key, w);
+      }
+      return w;
+    }
+
+    newPage(blank) {
+      if (this.cfg.paperTint) {
+        const p = this.cfg.paper;
+        this.pdf.setFillColor(p[0], p[1], p[2]);
+        this.pdf.rect(0, 0, this.W, this.H, 'F');
+      }
+      if (!this.started) { this.started = true; this.page = 0; }
+      else { this.pdf.addPage([this.W, this.H], 'portrait'); this.page++; }
+      this.y = this.m().t;
+      if (!blank && this.cfg.pageNums) this.folio();
+    }
+
+    folio() {
+      const size = this.cfg.bodySize, s = this.s, m = this.m();
+      const label = String(this.page + 1);
+      this.setFont('n', size);
+      const w = this.pdf.getTextWidth(label);
+      const y = this.H - m.b / 2 + size * s * PT2MM * 0.35;
+      this.pdf.text(label, this.W / 2 - w / 2, y);
+    }
+
+    ensure(h) {
+      if (!this.started) { this.newPage(); return; }
+      if (this.y + h > this.bottom()) this.newPage();
+    }
+
+    rule(wMM, before, after) {
+      const s = this.s, m = this.m(), tw = this.textW(), w = wMM * s;
+      this.y += (before || 0) * s;
+      if (this.y + 2 * s > this.bottom()) this.newPage();
+      const x = m.l + (tw - w) / 2;
+      this.pdf.setDrawColor(this.cfg.ink[0], this.cfg.ink[1], this.cfg.ink[2]);
+      this.pdf.setLineWidth(0.2 * s);
+      this.pdf.line(x, this.y, x + w, this.y);
+      this.y += (after || 0) * s;
+    }
+
+    /* ---------- justified / ragged line setter ---------- */
+    drawRuns(specs, o) {
+      o = o || {};
+      const cfg = this.cfg, s = cfg.scale;
+      const size = o.size || cfg.bodySize;
+      const lineH = size * (o.lead || cfg.lead) * PT2MM * s;
+      const indent = (o.indent || 0) * s;
+      const firstIndent = (o.firstIndent || 0) * s;
+      const align = o.align || 'left';
+      const justify = cfg.justify && align === 'left' && o.justify !== false;
+      const m = this.m();
+      const avail = this.textW() - indent;
+
+      /* tokenise into words + space tokens */
+      const toks = [];
+      for (const run of specs) {
+        const role = roleOf(run);
+        const words = String(run.t).split(/\s+/);
+        for (const w0 of words) {
+          if (!w0) continue;
+          toks.push({ t: w0, w: this.measure(w0, role, size), space: false, r: role });
+          toks.push({ t: ' ', w: this.measure(' ', role, size), space: true, r: role });
+        }
+      }
+      if (!toks.length) return;
+      toks.pop();                                       // drop trailing space
+      if (firstIndent > 0) toks.unshift({ t: '', w: firstIndent, space: false, marker: true, r: 'r' });
+
+      /* greedy line breaking */
+      const lines = [];
+      let line = [], lw = 0;
+      const flushLine = () => { if (line.length) { lines.push({ toks: line, w: lw }); line = []; lw = 0; } };
+      for (const t of toks) {
+        const atStart = line.length === 0 || (line.length === 1 && line[0].marker);
+        if (atStart && t.space) continue;
+        if (line.length && lw + t.w > avail + 0.01) {
+          if (t.space) { flushLine(); continue; }
+          flushLine();
+          line.push(t); lw = t.w;
+        } else {
+          line.push(t); lw += t.w;
+        }
+      }
+      flushLine();
+
+      /* draw */
+      for (let li = 0; li < lines.length; li++) {
+        if (this.y + lineH > this.bottom()) this.newPage();
+        const L = lines[li];
+        const isLast = li === lines.length - 1;
+        const yBase = this.y + size * s * PT2MM * 0.76;
+
+        let gaps = 0, real = 0;
+        for (const t of L.toks) { if (t.space) gaps++; else if (!t.marker) real++; }
+        const extra = (justify && !isLast && gaps > 0 && real > 1)
+          ? Math.max(0, avail - L.w) / gaps : 0;
+
+        let x = m.l + indent;
+        if (align === 'center') x = m.l + indent + (avail - L.w) / 2;
+        else if (align === 'right') x = m.l + indent + Math.max(0, avail - L.w);
+
+        for (const t of L.toks) {
+          if (t.marker) { x += t.w; continue; }
+          if (t.space) { x += t.w + extra; continue; }
+          this.setFont(t.r, size);
+          this.pdf.text(t.t, x, yBase);
+          x += t.w;
+        }
+        this.y += lineH;
+      }
+    }
+
+    /* ---------- tracked (letterspaced) heading text ---------- */
+    trackedWidth(text, size, track) {
+      let w = 0;
+      for (const ch of Array.from(text)) w += this.measure(ch, 'b', size) + track;
+      return Math.max(0, w - track);
+    }
+
+    drawTracked(text, size, track, align) {
+      const m = this.m(), avail = this.textW();
+      const w = this.trackedWidth(text, size, track);
+      let x = m.l;
+      if (align === 'center') x = m.l + Math.max(0, (avail - w) / 2);
+      this.setFont('b', size);
+      const yBase = this.y + size * this.s * PT2MM * 0.74;
+      for (const ch of Array.from(text)) {
+        this.pdf.text(ch, x, yBase);
+        x += this.measure(ch, 'b', size) + track;
+      }
+    }
+
+    heading(text, o) {
+      o = o || {};
+      const s = this.s, size = o.size || this.cfg.bodySize;
+      const lineH = size * (o.lead || 1.4) * PT2MM * s;
+      const track = (o.track || 0) * s;
+      const avail = this.textW();
+      const txt = (o.upper ? String(text).toUpperCase() : String(text)).replace(/\s+/g, ' ').trim();
+      const words = txt.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const wd of words) {
+        const test = cur ? cur + ' ' + wd : wd;
+        if (cur && this.trackedWidth(test, size, track) > avail) { lines.push(cur); cur = wd; }
+        else cur = test;
+      }
+      if (cur) lines.push(cur);
+      if (!lines.length) return;
+
+      const before = (o.before || 0) * s, after = (o.after || 0) * s;
+      const need = before + lines.length * lineH + after + (o.keepWith || 0) * s;
+      if (this.y + need > this.bottom() && this.y > this.m().t + 0.5) this.newPage();
+
+      this.y += before;
+      for (const ln of lines) {
+        if (this.y + lineH > this.bottom()) this.newPage();
+        this.drawTracked(ln, size, track, o.align || 'center');
+        this.y += lineH;
+      }
+      this.y += after;
+    }
+
+    /* ---------- paragraphs ---------- */
+    para(text, o) {
+      o = o || {};
+      const size = o.size || this.cfg.bodySize;
+      const lineH = size * (o.lead || this.cfg.lead) * PT2MM * this.s;
+      const indent = (o.indent || 0) * this.s;
+      const avail = Math.max(1, this.textW() - indent);
+      const total = this.measure(plain(text), 'r', size);
+      const est = Math.max(1, Math.ceil(total / avail * 1.04));
+      this.ensure(est * lineH * (o.keepAll ? 1 : 0.35) + (o.before || 0) * this.s);
+      this.y += (o.before || 0) * this.s;
+      this.drawRuns(parseInline(text), {
+        size: size, lead: o.lead, indent: o.indent,
+        firstIndent: o.firstIndent === undefined ? this.cfg.firstIndent : o.firstIndent,
+        align: o.align, justify: o.justify
+      });
+      this.y += (o.after || 0) * this.s;
+    }
+
+    /* ---------- chapter opener: always a fresh page ---------- */
+    chapter(title) {
+      const c = this.cfg;
+      if (this.started && c.chapterRecto && this.page % 2 === 0) this.newPage(true); // pad to recto
+      this.newPage();
+      this.y += this.contentH() * 0.14;
+      this.heading(title, {
+        size: c.bodySize * 2.05, lead: 1.4, before: 0, after: 3,
+        upper: c.upperTitles, track: 0.45, keepWith: 0, align: 'center'
+      });
+      this.y += this.contentH() * 0.03;
+    }
+
+    /* ---------- title page ---------- */
+    titlePage(t) {
+      const c = this.cfg, s = this.s, cH = this.contentH(), mid = this.W / 2;
+      this.newPage();
+      let y = this.m().t + cH * 0.17;
+      const put = (text, role, size, gap) => {
+        if (!text) return;
+        this.setFont(role, size);
+        this.pdf.text(text, mid, y, { align: 'center' });
+        y += gap * s;
+      };
+      if (t.place) put(t.place, 'i', c.bodySize * 1.05, cH * 0.05);
+      put(t.title, 'b', c.bodySize * 2.15, cH * 0.055);
+      if (t.sub) put(t.sub, 'r', c.bodySize * 1.02, cH * 0.05);
+      this.y = y + cH * 0.1;
+      if (t.by) { this.y += cH * 0.06; put(t.by, 'r', c.bodySize * 0.94, cH * 0.02); y = this.y; }
+      if (t.date) { this.y += cH * 0.018; put(t.date, 'r', c.bodySize * 0.94, cH * 0.02); }
+      this.rule(16, 0, 0);
+    }
+
+    /* ---------- markdown → pages ---------- */
+    writeMarkdown(md) {
+      const c = this.cfg;
+      const blocks = parseMarkdown(md);
+      let ord = 0;
+      for (const b of blocks) {
+        switch (b.type) {
+          case 'h1':
+            ord = 0; this.chapter(b.text); break;
+          case 'h2':
+            ord = 0;
+            this.heading(b.text, { size: c.bodySize * 1.42, before: 3.4, after: 1.6, lead: 1.35,
+              upper: false, track: 0.25, keepWith: 12, align: 'left' });
+            break;
+          case 'h3':
+            ord = 0;
+            this.heading(b.text, { size: c.bodySize * 1.16, before: 2.4, after: 1.2, lead: 1.3,
+              upper: false, track: 0.2, keepWith: 8, align: 'left' });
+            break;
+          case 'p':
+            ord = 0; this.para(b.text); break;
+          case 'quote':
+            this.para(b.text, { indent: 4.5, size: c.bodySize * 0.94, lead: 1.5,
+              before: 1.2, after: 1.2, firstIndent: 0 });
+            break;
+          case 'li': {
+            const marker = b.ordered ? ((ord += 1) + '.') : BULLET;
+            this.para(marker + ' ' + b.text, {
+              indent: 2.2 + b.depth * 3, firstIndent: 0, before: 0.3, after: 0.3
+            });
+            break;
+          }
+          case 'hr':
+            this.rule(16, 2.5, 4.5); break;
+          case 'code':
+            this.para(b.text, { size: c.bodySize * 0.9, indent: 2, before: 1, after: 1, firstIndent: 0 });
+            break;
+          case 'pagebreak':
+            this.newPage(); break;
+          default: break;
+        }
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 4. Sample content
+   * ------------------------------------------------------------------ */
+  const SAMPLE = [
+    '# Caput I — In principio',
+    '',
+    'In principio erat Verbum, et Verbum erat apud Deum, et Deus erat Verbum. Hoc erat in principio apud Deum. Omnia per ipsum facta sunt, et sine ipso factum est nihil quod factum est.',
+    '',
+    'In ipso vita erat, et vita erat lux hominum; et lux in tenebris lucet, et tenebrae eam non comprehenderunt.',
+    '',
+    '> Et Verbum caro factum est, et habitavit in nobis, et vidimus gloriam eius.',
+    '',
+    '## De testimonio Ioannis',
+    '',
+    'Fuit homo missus a Deo, cui nomen erat Ioannes. Hic venit in testimonium, ut testimonium perhiberet de lumine.',
+    '',
+    '# Caput II — Nuptiae in Cana',
+    '',
+    'Et die tertia nuptiae factae sunt in Cana Galilaeae, et erat mater Iesu ibi. Vocatus est autem et Iesus et discipuli eius ad nuptias.',
+    '',
+    '## De aqua in vinum',
+    '',
+    'Dicit mater Iesu ad eum: Vinum non habent. Et dicit ei Iesus: Quid mihi et tibi est, mulier? nondum venit hora mea.',
+    '',
+    '- Hydriae sex positae erant.
+    - Implevit eas usque ad summum.
+    - Et factum est vinum bonum.',
+    '',
+    '---',
+    '',
+    '# Caput III — Nicodemus',
+    '',
+    'Erat autem homo ex pharisaeis, Nicodemus nomine, princeps Iudaeorum. Hic venit ad Iesum nocte et dixit ei: Rabbi, scimus quia a Deo venisti magister.',
+    '',
+    '\\pagebreak',
+    '',
+    'Sic enim dilexit Deus mundum, ut Filium suum unigenitum daret.'
+  ].join('\n');
+
+  /* ------------------------------------------------------------------ *
+   * 5. Form <-> config
+   * ------------------------------------------------------------------ */
+  function readCfg() {
+    return {
+      titlePage: $('titlePage').checked,
+      title: $('tTitle').value,
+      sub: $('tSub').value,
+      by: $('tBy').value,
+      place: $('tPlace').value,
+      date: $('tDate').value,
+      scale: clamp(parseFloat($('scale').value) || 1, 0.25, 4),
+      bodySize: clamp(num('bodySize', 8.4), 4, 24),
+      lead: clamp(num('lead', 1.55), 1, 3),
+      firstIndent: clamp(num('firstIndent', 0), 0, 10),
+      mTop: clamp(num('mTop', 13), 2, 60),
+      mBot: clamp(num('mBot', 15), 2, 60),
+      mIn: clamp(num('mIn', 14), 2, 60),
+      mOut: clamp(num('mOut', 11), 2, 60),
+      fontName: $('font').value,
+      justify: $('justify').checked,
+      pageNums: $('pageNums').checked,
+      chapterRecto: $('chapterRecto').checked,
+      upperTitles: $('upperTitles').checked,
+      ink: hexToRgb($('ink').value),
+      paper: hexToRgb($('paper').value),
+      paperTint: $('paperTint').checked
+    };
+  }
+
+  function saveState() {
+    try {
+      const data = {};
+      for (const id of FIELDS) {
+        const el = $(id);
+        if (!el) continue;
+        data[id] = el.type === 'checkbox' ? el.checked : el.value;
+      }
+      localStorage.setItem('scg-replica', JSON.stringify(data));
+    } catch (e) { /* private mode — ignore */ }
+  }
+
+  function loadState() {
+    try {
+      const data = JSON.parse(localStorage.getItem('scg-replica') || 'null');
+      if (!data) return;
+      for (const id of FIELDS) {
+        if (!(id in data)) continue;
+        const el = $(id);
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = !!data[id];
+        else el.value = data[id];
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function captureDefaults() {
+    for (const id of FIELDS) {
+      const el = $(id);
+      if (el) DEFAULTS[id] = el.type === 'checkbox' ? el.checked : el.value;
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 6. Generate
+   * ------------------------------------------------------------------ */
+  function generate() {
+    try {
+      const jsPDF = window.jspdf && window.jspdf.jsPDF;
+      if (typeof jsPDF !== 'function') {
+        throw new Error('jsPDF is not loaded. Reload the page with an internet connection.');
+      }
+
+      const cfg = readCfg();
+      const W = PAGE_W * cfg.scale, H = PAGE_H * cfg.scale;
+
+      const pdf = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait', compress: true });
+      pdf.setProperties({
+        title: cfg.title || 'St Cuthbert Gospel',
+        subject: cfg.sub || 'Replica',
+        creator: 'St Cuthbert Gospel replica generator'
+      });
+
+      const book = new Book(pdf, cfg);
+      if (cfg.titlePage) book.titlePage(cfg);
+      book.writeMarkdown($('md').value);
+      if (!book.started) book.newPage();
+
+      const total = book.page + 1;
+      const blob = pdf.output('blob');
+
+      if (state.url) { URL.revokeObjectURL(state.url); state.url = null; }
+      state.url = URL.createObjectURL(blob);
+
+      const frame = $('frame');
+      frame.src = state.url;
+
+      const dl = $('dl');
+      dl.href = state.url;
+      dl.download = slug(cfg.title) + '-replica.pdf';
+      dl.setAttribute('aria-disabled', 'false');
+
+      const tbW = W - (cfg.mIn + cfg.mOut) * cfg.scale;
+      const tbH = H - (cfg.mTop + cfg.mBot) * cfg.scale;
+      setStatus('PDF ready — ' + total + ' page' + (total === 1 ? '' : 's') + ' · page ' +
+        round(W) + ' × ' + round(H) + ' mm · text block ' + round(tbW) + ' × ' + round(tbH) + ' mm');
+
+      /* characters the built-in PDF fonts cannot encode */
+      const bad = {};
+      let n = 0;
+      for (const ch of $('md').value) {
+        if (ch.charCodeAt(0) > 255 && !bad[ch]) { bad[ch] = 1; n++; }
+      }
+      const keys = Object.keys(bad).slice(0, 12);
+      const warn = $('warn');
+      if (keys.length) {
+        warn.hidden = false;
+        warn.textContent = 'These characters fall outside the built-in font encoding and may be dropped: ' +
+          keys.join(' ') + (n > 12 ? ' …' : '') + ' — replace them, or switch to a Unicode-encoded PDF workflow.';
+      } else {
+        warn.hidden = true;
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus('Generation failed: ' + (err && err.message ? err.message : String(err)), true);
+      $('dl').setAttribute('aria-disabled', 'true');
+    }
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 7. Wiring
+   * ------------------------------------------------------------------ */
+  function scheduleGenerate() {
+    clearTimeout(state.timer);
+    state.timer = setTimeout(generate, 700);
+  }
+
+  function bind() {
+    $('go').addEventListener('click', function (e) { e.preventDefault(); generate(); });
+
+    $('form').addEventListener('submit', function (e) { e.preventDefault(); generate(); });
+
+    $('sample').addEventListener('click', function () {
+      $('md').value = SAMPLE;
+      saveState();
+      generate();
+    });
+
+    $('reset').addEventListener('click', function () {
+      for (const id of FIELDS) {
+        const el = $(id);
+        if (!el) continue;
+        if (el.type === 'checkbox') el.checked = DEFAULTS[id];
+        else el.value = DEFAULTS[id];
+      }
+      saveState();
+      generate();
+    });
+
+    const onChange = function () { saveState(); scheduleGenerate(); };
+    for (const id of FIELDS) {
+      const el = $(id);
+      if (!el) continue;
+      el.addEventListener('input', onChange);
+      el.addEventListener('change', onChange);
+    }
+  }
+
+  function init() {
+    $('md').value = SAMPLE;
+    captureDefaults();
+    loadState();
+    bind();
+
+    if (!(window.jspdf && window.jspdf.jsPDF)) {
+      setStatus('jsPDF is not loaded — check your connection and reload.', true);
+      return;
+    }
+    generate();
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
 </script>
 </body>
 </html>
