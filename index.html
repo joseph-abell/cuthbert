@@ -69,7 +69,8 @@
     <fieldset>
       <legend>Content — Markdown</legend>
       <p class="hint">Each <code>#</code> heading starts a new page. <code>##</code>/<code>###</code> are subheads,
-        <code>&gt;</code> quotes, <code>-</code> lists, <code>\pagebreak</code> forces a break.</p>
+        <code>&gt;</code> quotes, <code>-</code> lists. <code>\pagebreak</code> forces a break, and the page it
+        opens carries no folio.</p>
       <textarea id="md" spellcheck="false"></textarea>
     </fieldset>
 
@@ -272,7 +273,6 @@
 
       if (!t) { flushPara(); i++; continue; }
 
-      /* \pagebreak, [[pagebreak]] or an HTML pagebreak comment */
       const bare = t.replace(/[\s<>!-]/g, '').toLowerCase();
       if (bare === '\\pagebreak' || bare === '[[pagebreak]]' || bare === 'pagebreak') {
         flushPara(); blocks.push({ type: 'pagebreak' }); i++; continue;
@@ -320,7 +320,7 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 4. Page engine
+   * 4. Page engine  (folios are drawn when a page is *finished*)
    * ------------------------------------------------------------------ */
   class Book {
     constructor(pdf, cfg) {
@@ -328,8 +328,12 @@
       this.cfg = cfg;
       this.W = PAGE_W * cfg.scale;
       this.H = PAGE_H * cfg.scale;
-      this.page = 0;
+      this.page = 0;          // 0-based physical page index
+      this.folioNo = 0;       // last printed folio — only numbered pages consume one
       this.started = false;
+      this.hasContent = false;
+      this.noFolio = false;
+      this.pageDone = false;
       this.y = 0;
       this._mc = new Map();
     }
@@ -360,7 +364,6 @@
       this.pdf.setTextColor(c.ink[0], c.ink[1], c.ink[2]);
     }
 
-    /* cached width in mm for the current font/size/scale */
     measure(text, role, size) {
       const key = this.cfg.fontName + '|' + role + '|' + Math.round(size * this.s * 100) + '|' + text;
       let w = this._mc.get(key);
@@ -372,9 +375,19 @@
       return w;
     }
 
-    newPage(blank) {
+    /* opts: true | { blank, noFolio } */
+    newPage(opts) {
+      if (opts === true) opts = { blank: true };
+      opts = opts || {};
+
+      if (this.started) this.finishPage();          // folio goes onto the page just closed
+
       if (!this.started) { this.started = true; this.page = 0; }
       else { this.pdf.addPage([this.W, this.H], 'portrait'); this.page++; }
+
+      this.noFolio = !!opts.noFolio || !!opts.blank;
+      this.hasContent = false;
+      this.pageDone = false;
 
       /* tint AFTER the page exists, otherwise it lands on the previous page */
       if (this.cfg.paperTint) {
@@ -383,12 +396,22 @@
         this.pdf.rect(0, 0, this.W, this.H, 'F');
       }
       this.y = this.m().t;
-      if (!blank && this.cfg.pageNums) this.folio();
     }
 
+    /* draw the folio for the page being closed — never mid-page, so a page
+       that turns out blank can still be suppressed */
+    finishPage() {
+      if (!this.started || this.pageDone) return;
+      this.pageDone = true;
+      if (this.cfg.pageNums && !this.noFolio && this.hasContent) this.folio();
+    }
+
+    end() { this.finishPage(); }
+
     folio() {
+      this.folioNo += 1;
       const size = this.cfg.bodySize, s = this.s, m = this.m();
-      const label = String(this.page + 1);
+      const label = String(this.folioNo);
       this.setFont('n', size);
       const w = this.pdf.getTextWidth(label);
       const y = this.H - m.b / 2 + size * s * PT2MM * 0.35;
@@ -408,6 +431,7 @@
       this.pdf.setDrawColor(this.cfg.ink[0], this.cfg.ink[1], this.cfg.ink[2]);
       this.pdf.setLineWidth(0.2 * s);
       this.pdf.line(x, this.y, x + w, this.y);
+      this.hasContent = true;
       this.y += (after || 0) * s;
     }
 
@@ -480,6 +504,7 @@
           this.pdf.text(t.t, x, yBase);
           x += t.w;
         }
+        this.hasContent = true;
         this.y += lineH;
       }
     }
@@ -503,6 +528,7 @@
         this.pdf.text(ch, x, yBase);
         x += this.measure(ch, 'b', size) + track;
       }
+      this.hasContent = true;
     }
 
     heading(text, o) {
@@ -577,25 +603,65 @@
       this.y += this.contentH() * 0.03;
     }
 
-    /* ---------- title page ---------- */
+    /* ---------- title page ---------- *
+     * Laid out on fixed proportional anchors (fractions of the content
+     * height) rather than by stacking gaps, so the block breathes:
+     *   imprint  .11 · title .33 · subtitle below · rule .62 · imprint/foot .80
+     * Long titles/subtitles wrap centred within the text block.
+     */
     titlePage(t) {
-      const c = this.cfg, s = this.s, cH = this.contentH(), mid = this.W / 2;
-      this.newPage();
-      let y = this.m().t + cH * 0.18;
-      const put = (text, role, size, gap) => {
-        if (!text) return;
-        this.setFont(role, size);
-        this.pdf.text(String(text), mid, y, { align: 'center' });
-        y += (gap || 0) * s;
+      const c = this.cfg, s = this.s, m = this.m();
+      const cH = this.contentH(), mid = this.W / 2, tw = this.textW();
+      this.newPage({ noFolio: true });
+
+      /* wrap words to the text width for the given role/size */
+      const wrap = (text, role, size) => {
+        const words = String(text || '').split(/\s+/).filter(Boolean);
+        const lines = [];
+        let cur = '';
+        for (const w of words) {
+          const test = cur ? cur + ' ' + w : w;
+          if (cur && this.measure(test, role, size) > tw) { lines.push(cur); cur = w; }
+          else cur = test;
+        }
+        if (cur) lines.push(cur);
+        return lines;
       };
-      if (t.place) put(t.place, 'i', c.bodySize * 1.05, cH * 0.055);
-      put(t.title, 'b', c.bodySize * 2.15, cH * 0.055);
-      if (t.sub) put(t.sub, 'r', c.bodySize * 1.02, cH * 0.05);
-      y += cH * 0.16;
-      if (t.by) put(t.by, 'r', c.bodySize * 0.94, cH * 0.03);
-      if (t.date) put(t.date, 'r', c.bodySize * 0.94, cH * 0.02);
-      this.y = this.m().t + cH * 0.82;
-      this.rule(16, 0, 0);
+
+      /* draw a centred block from baseline y; returns the baseline below it */
+      const block = (text, role, size, y, lead) => {
+        if (!text) return y;
+        const lh = size * (lead || 1.4) * PT2MM * s;
+        const lines = wrap(text, role, size);
+        for (const ln of lines) {
+          this.setFont(role, size);
+          this.pdf.text(ln, mid, y, { align: 'center' });
+          this.hasContent = true;
+          y += lh;
+        }
+        return y;
+      };
+
+      const top = m.t;
+
+      /* imprint, set high and alone */
+      block(t.place, 'i', c.bodySize * 1.0, top + cH * 0.11, 1.5);
+
+      /* title + subtitle, deliberately far apart */
+      let y = block(t.title, 'b', c.bodySize * 2.15, top + cH * 0.33, 1.32);
+      y = block(t.sub, 'r', c.bodySize * 1.02, y + cH * 0.085, 1.5);
+
+      /* short ornament rule, kept clear of a long title */
+      this.y = Math.max(top + cH * 0.60, y + cH * 0.07);
+      this.rule(14, 0, 0);
+
+      /* scribal imprint at the foot, pushed down but never off the page */
+      let by = Math.max(y + cH * 0.10, top + cH * 0.79);
+      by = Math.min(by, this.bottom() - cH * 0.16);
+      by = block(t.by, 'r', c.bodySize * 0.94, by, 1.6);
+      block(t.date, 'r', c.bodySize * 0.94, by + cH * 0.03, 1.6);
+
+      this.y = top + cH * 0.96;
     }
 
     /* ---------- markdown → pages ---------- */
@@ -636,7 +702,8 @@
             this.para(b.text, { size: c.bodySize * 0.9, indent: 2, before: 1, after: 1, firstIndent: 0 });
             break;
           case 'pagebreak':
-            this.newPage(); break;
+            this.newPage({ noFolio: true });      // this page carries no folio
+            break;
           default: break;
         }
       }
@@ -810,11 +877,10 @@
       if (cfg.titlePage) book.titlePage(cfg);
       book.writeMarkdown($('md').value);
       if (!book.started) book.newPage();
+      book.end();                       // flush the folio of the final page
 
       const total = book.page + 1;
 
-      /* typed PDF blob — 'blob' output can come back untyped in some builds,
-         which makes the iframe render blank */
       let blob;
       try {
         const raw = pdf.output('arraybuffer');
@@ -841,9 +907,9 @@
       const tbW = W - (cfg.mIn + cfg.mOut) * cfg.scale;
       const tbH = H - (cfg.mTop + cfg.mBot) * cfg.scale;
       setStatus('PDF ready — ' + total + ' page' + (total === 1 ? '' : 's') + ' · page ' +
-        round(W) + ' × ' + round(H) + ' mm · text block ' + round(tbW) + ' × ' + round(tbH) + ' mm');
+        round(W) + ' × ' + round(H) + ' mm · text block ' + round(tbW) + ' × ' + round(tbH) + ' mm · ' +
+        book.folioNo + ' numbered');
 
-      /* characters the built-in PDF fonts cannot encode */
       const bad = {};
       let n = 0;
       for (const ch of $('md').value) {
@@ -879,7 +945,6 @@
 
   function bind() {
     $('go').addEventListener('click', function (e) { e.preventDefault(); generate(); });
-
     $('form').addEventListener('submit', function (e) { e.preventDefault(); generate(); });
 
     $('sample').addEventListener('click', function () {
@@ -907,12 +972,10 @@
       el.addEventListener('change', onChange);
     }
 
-    /* flush pending writes when the page goes away */
     window.addEventListener('pagehide', saveState);
     window.addEventListener('beforeunload', saveState);
     document.addEventListener('visibilitychange', function () { if (document.hidden) saveState(); });
 
-    /* keep tabs in sync */
     window.addEventListener('storage', function (e) {
       if (e.key !== STORE_KEY || !e.newValue) return;
       try {
