@@ -33,6 +33,7 @@
   button:hover,.btn:hover{background:#312a23;border-color:#4a4036}
   button.primary{background:var(--accent);border-color:var(--accent);color:#1a1409;font-weight:600}
   button.primary:hover{background:#d8b47a}
+  button[disabled]{opacity:.55;cursor:progress}
   .btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
   .status{margin:6px 0 0;font-size:12px;color:var(--muted);white-space:pre-wrap}
   .status.err{color:#f2a6a6}
@@ -114,6 +115,7 @@
     <div class="actions">
       <button type="button" class="primary" id="go">Generate PDF</button>
       <a class="btn" id="dl" download aria-disabled="true">Download</a>
+      <a class="btn" id="open" target="_blank" rel="noopener" aria-disabled="true">Open in new tab</a>
       <button type="button" id="sample">Sample text</button>
       <button type="button" id="reset">Reset</button>
     </div>
@@ -124,8 +126,6 @@
   <section class="preview"><iframe id="frame" title="PDF preview"></iframe></section>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-        onerror="document.getElementById('status').textContent='Could not load jsPDF from the CDN — check your connection and reload.';document.getElementById('status').className='status err';"></script>
 <script>
 (function () {
   'use strict';
@@ -133,22 +133,27 @@
   /* ------------------------------------------------------------------ *
    * 0. constants & helpers
    * ------------------------------------------------------------------ */
-  const $ = id => document.getElementById(id);
+  const $ = function (id) { return document.getElementById(id); };
   const PT2MM = 25.4 / 72;
-  const PAGE_W = 92;          // mm — St Cuthbert Gospel, Add MS 89000
-  const PAGE_H = 138;         // mm — 1 : 1.5
+  const PAGE_W = 92;
+  const PAGE_H = 138;
   const BULLET = '\u2022';
+  const STORE_KEY = 'scg-replica.v2';
+  const LEGACY_KEY = 'scg-replica';
   const FIELDS = ['titlePage','tTitle','tSub','tBy','tPlace','tDate','md','scale','bodySize','lead',
                   'firstIndent','mTop','mBot','mIn','mOut','font','justify','pageNums',
                   'chapterRecto','upperTitles','ink','paper','paperTint'];
 
-  const state = { url: null, timer: null };
   const DEFAULTS = {};
-  const num = (id, d) => { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
-  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-  const round = n => Math.round(n * 10) / 10;
-  const slug = s => (s || 'st-cuthbert-gospel').toLowerCase().normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'document';
+  const state = { url: null, genTimer: null, saveTimer: null, busy: false };
+
+  const num = function (id, d) { const v = parseFloat($(id).value); return isFinite(v) ? v : d; };
+  const clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+  const round = function (n) { return Math.round(n * 10) / 10; };
+  const slug = function (s) {
+    return (s || 'st-cuthbert-gospel').toLowerCase().normalize('NFKD')
+      .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'document';
+  };
 
   function hexToRgb(h) {
     const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(h || '');
@@ -163,12 +168,56 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 1. Markdown — inline runs [{t, b, i, mono}]
+   * 1. jsPDF loader — CDN fallbacks, retried on every Generate click
+   * ------------------------------------------------------------------ */
+  const CDNS = [
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+    'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
+  ];
+  let pdfLib = null;
+
+  function injectScript(src) {
+    return new Promise(function (resolve, reject) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.async = true;
+      s.onload = function () {
+        if (window.jspdf && typeof window.jspdf.jsPDF === 'function') resolve(window.jspdf.jsPDF);
+        else reject(new Error('no jsPDF global from ' + src));
+      };
+      s.onerror = function () { reject(new Error('failed to load ' + src)); };
+      document.head.appendChild(s);
+    });
+  }
+
+  function getJsPDF() {
+    if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+      pdfLib = Promise.resolve(window.jspdf.jsPDF);
+      return pdfLib;
+    }
+    if (pdfLib) return pdfLib;
+    pdfLib = (function () {
+      const errs = [];
+      return (async function () {
+        for (let i = 0; i < CDNS.length; i++) {
+          try { return await injectScript(CDNS[i]); }
+          catch (e) { errs.push(errs.length + 1 + ') ' + e.message); }
+        }
+        throw new Error('jsPDF could not be loaded — ' + errs.join(' | '));
+      })();
+    })();
+    pdfLib.catch(function () { pdfLib = null; });   // allow a retry next click
+    return pdfLib;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 2. Markdown — inline runs [{t, b, i, mono}]
    * ------------------------------------------------------------------ */
   function parseInline(src) {
     const out = [];
     let buf = '', bold = false, ital = false;
-    const flush = () => { if (buf) { out.push({ t: buf, b: bold, i: ital }); buf = ''; } };
+    const flush = function () { if (buf) { out.push({ t: buf, b: bold, i: ital }); buf = ''; } };
     let i = 0;
     while (i < src.length) {
       const c = src[i];
@@ -191,23 +240,27 @@
     return out;
   }
 
-  const plain = s => parseInline(s).map(r => r.t).join('');
-  const roleOf = r => r.mono ? 'mono' : (r.b && r.i ? 'bi' : r.b ? 'b' : r.i ? 'i' : 'r');
+  const plain = function (s) { return parseInline(s).map(function (r) { return r.t; }).join(''); };
+  const roleOf = function (r) {
+    return r.mono ? 'mono' : (r.b && r.i ? 'bi' : r.b ? 'b' : r.i ? 'i' : 'r');
+  };
 
   /* ------------------------------------------------------------------ *
-   * 2. Markdown — blocks
+   * 3. Markdown — blocks
    * ------------------------------------------------------------------ */
   function parseMarkdown(md) {
     const lines = String(md || '').replace(/\r\n?/g, '\n').split('\n');
     const blocks = [];
     let para = [], i = 0;
-    const flushPara = () => { if (para.length) { blocks.push({ type: 'p', text: para.join(' ') }); para = []; } };
+    const flushPara = function () {
+      if (para.length) { blocks.push({ type: 'p', text: para.join(' ') }); para = []; }
+    };
 
     while (i < lines.length) {
       const raw = lines[i];
       const t = raw.trim();
 
-      if (t.slice(0, 3) === '```') {                        // fenced code
+      if (t.slice(0, 3) === '```') {
         flushPara();
         const buf = [];
         i++;
@@ -219,7 +272,9 @@
 
       if (!t) { flushPara(); i++; continue; }
 
-      if (/^(\\pagebreak|\[\[pagebreak\]\]|<!--\s*pagebreak\s*-->)$/i.test(t)) {
+      /* \pagebreak, [[pagebreak]] or an HTML pagebreak comment */
+      const bare = t.replace(/[\s<>!-]/g, '').toLowerCase();
+      if (bare === '\\pagebreak' || bare === '[[pagebreak]]' || bare === 'pagebreak') {
         flushPara(); blocks.push({ type: 'pagebreak' }); i++; continue;
       }
 
@@ -234,7 +289,7 @@
         i++; continue;
       }
 
-      if (/^>\s?/.test(t)) {                                // block quote
+      if (/^>\s?/.test(t)) {
         flushPara();
         const buf = [];
         while (i < lines.length && /^\s*>\s?/.test(lines[i])) {
@@ -265,7 +320,7 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 3. Page engine
+   * 4. Page engine
    * ------------------------------------------------------------------ */
   class Book {
     constructor(pdf, cfg) {
@@ -281,7 +336,7 @@
 
     get s() { return this.cfg.scale; }
 
-    /* mirrored margins: page 0 is a recto (right-hand) page */
+    /* mirrored margins: page index 0 is a recto (right-hand) page */
     m() {
       const c = this.cfg, s = c.scale, inner = this.page % 2 === 0;
       return {
@@ -292,40 +347,41 @@
       };
     }
 
-    textW() { const m = this.m(); return this.W - m.l - m.r; }
+    textW() { const m = this.m(); return Math.max(4, this.W - m.l - m.r); }
     bottom() { return this.H - this.m().b; }
-    contentH() { return this.H - (this.cfg.mTop + this.cfg.mBot) * this.s; }
+    contentH() { return Math.max(10, this.H - (this.cfg.mTop + this.cfg.mBot) * this.s); }
 
     setFont(role, size) {
       const c = this.cfg;
-      const map = { r: 'normal', n: 'normal', b: 'bold', i: 'italic', bi: 'bolditalic', mono: 'normal' };
+      const styles = { r: 'normal', n: 'normal', b: 'bold', i: 'italic', bi: 'bolditalic', mono: 'normal' };
       const fam = role === 'mono' ? 'courier' : c.fontName;
-      this.pdf.setFont(fam, map[role] || 'normal');
-      this.pdf.setFontSize(size * c.scale);
+      this.pdf.setFont(fam, styles[role] || 'normal');
+      this.pdf.setFontSize(size * this.s);
       this.pdf.setTextColor(c.ink[0], c.ink[1], c.ink[2]);
     }
 
-    /* cached width in mm for the current font, at `size` pt, scaled */
+    /* cached width in mm for the current font/size/scale */
     measure(text, role, size) {
-      const fs = Math.round(size * 100);
-      const key = this.cfg.fontName + '|' + role + '|' + fs + '|' + text;
+      const key = this.cfg.fontName + '|' + role + '|' + Math.round(size * this.s * 100) + '|' + text;
       let w = this._mc.get(key);
       if (w === undefined) {
         this.setFont(role, size);
-        w = this.pdf.getTextWidth(text);   // mm
+        w = this.pdf.getTextWidth(text);
         this._mc.set(key, w);
       }
       return w;
     }
 
     newPage(blank) {
+      if (!this.started) { this.started = true; this.page = 0; }
+      else { this.pdf.addPage([this.W, this.H], 'portrait'); this.page++; }
+
+      /* tint AFTER the page exists, otherwise it lands on the previous page */
       if (this.cfg.paperTint) {
         const p = this.cfg.paper;
         this.pdf.setFillColor(p[0], p[1], p[2]);
         this.pdf.rect(0, 0, this.W, this.H, 'F');
       }
-      if (!this.started) { this.started = true; this.page = 0; }
-      else { this.pdf.addPage([this.W, this.H], 'portrait'); this.page++; }
       this.y = this.m().t;
       if (!blank && this.cfg.pageNums) this.folio();
     }
@@ -345,7 +401,7 @@
     }
 
     rule(wMM, before, after) {
-      const s = this.s, m = this.m(), tw = this.textW(), w = wMM * s;
+      const s = this.s, m = this.m(), tw = this.textW(), w = Math.min(wMM * s, tw);
       this.y += (before || 0) * s;
       if (this.y + 2 * s > this.bottom()) this.newPage();
       const x = m.l + (tw - w) / 2;
@@ -366,9 +422,8 @@
       const align = o.align || 'left';
       const justify = cfg.justify && align === 'left' && o.justify !== false;
       const m = this.m();
-      const avail = this.textW() - indent;
+      const avail = Math.max(4, this.textW() - indent);
 
-      /* tokenise into words + space tokens */
       const toks = [];
       for (const run of specs) {
         const role = roleOf(run);
@@ -380,13 +435,13 @@
         }
       }
       if (!toks.length) return;
-      toks.pop();                                       // drop trailing space
+      toks.pop();
       if (firstIndent > 0) toks.unshift({ t: '', w: firstIndent, space: false, marker: true, r: 'r' });
 
-      /* greedy line breaking */
       const lines = [];
       let line = [], lw = 0;
-      const flushLine = () => { if (line.length) { lines.push({ toks: line, w: lw }); line = []; lw = 0; } };
+      const flushLine = function () { if (line.length) { lines.push({ toks: line, w: lw }); line = []; lw = 0; } };
+
       for (const t of toks) {
         const atStart = line.length === 0 || (line.length === 1 && line[0].marker);
         if (atStart && t.space) continue;
@@ -400,7 +455,8 @@
       }
       flushLine();
 
-      /* draw */
+      const maxGap = size * s * PT2MM * 3.5;
+
       for (let li = 0; li < lines.length; li++) {
         if (this.y + lineH > this.bottom()) this.newPage();
         const L = lines[li];
@@ -409,8 +465,9 @@
 
         let gaps = 0, real = 0;
         for (const t of L.toks) { if (t.space) gaps++; else if (!t.marker) real++; }
-        const extra = (justify && !isLast && gaps > 0 && real > 1)
+        let extra = (justify && !isLast && gaps > 0 && real > 1)
           ? Math.max(0, avail - L.w) / gaps : 0;
+        if (extra > maxGap) extra = maxGap;
 
         let x = m.l + indent;
         if (align === 'center') x = m.l + indent + (avail - L.w) / 2;
@@ -439,6 +496,7 @@
       const w = this.trackedWidth(text, size, track);
       let x = m.l;
       if (align === 'center') x = m.l + Math.max(0, (avail - w) / 2);
+      else if (align === 'right') x = m.l + Math.max(0, avail - w);
       this.setFont('b', size);
       const yBase = this.y + size * this.s * PT2MM * 0.74;
       for (const ch of Array.from(text)) {
@@ -484,9 +542,9 @@
       const size = o.size || this.cfg.bodySize;
       const lineH = size * (o.lead || this.cfg.lead) * PT2MM * this.s;
       const indent = (o.indent || 0) * this.s;
-      const avail = Math.max(1, this.textW() - indent);
+      const avail = Math.max(4, this.textW() - indent);
       const total = this.measure(plain(text), 'r', size);
-      const est = Math.max(1, Math.ceil(total / avail * 1.04));
+      const est = Math.max(1, Math.ceil((total / avail) * 1.02));
       this.ensure(est * lineH * (o.keepAll ? 1 : 0.35) + (o.before || 0) * this.s);
       this.y += (o.before || 0) * this.s;
       this.drawRuns(parseInline(text), {
@@ -497,11 +555,20 @@
       this.y += (o.after || 0) * this.s;
     }
 
-    /* ---------- chapter opener: always a fresh page ---------- */
+    /* ---------- chapter opener ---------- */
     chapter(title) {
       const c = this.cfg;
-      if (this.started && c.chapterRecto && this.page % 2 === 0) this.newPage(true); // pad to recto
-      this.newPage();
+      if (this.started) {
+        const empty = this.y <= this.m().t + 0.6;
+        if (!empty) {
+          if (c.chapterRecto && this.page % 2 === 0) this.newPage(true);  // pad verso
+          this.newPage();
+        } else if (c.chapterRecto && this.page % 2 !== 0) {
+          this.newPage();                                                // verso → recto
+        }
+      } else {
+        this.newPage();
+      }
       this.y += this.contentH() * 0.14;
       this.heading(title, {
         size: c.bodySize * 2.05, lead: 1.4, before: 0, after: 3,
@@ -514,19 +581,20 @@
     titlePage(t) {
       const c = this.cfg, s = this.s, cH = this.contentH(), mid = this.W / 2;
       this.newPage();
-      let y = this.m().t + cH * 0.17;
+      let y = this.m().t + cH * 0.18;
       const put = (text, role, size, gap) => {
         if (!text) return;
         this.setFont(role, size);
-        this.pdf.text(text, mid, y, { align: 'center' });
-        y += gap * s;
+        this.pdf.text(String(text), mid, y, { align: 'center' });
+        y += (gap || 0) * s;
       };
-      if (t.place) put(t.place, 'i', c.bodySize * 1.05, cH * 0.05);
+      if (t.place) put(t.place, 'i', c.bodySize * 1.05, cH * 0.055);
       put(t.title, 'b', c.bodySize * 2.15, cH * 0.055);
       if (t.sub) put(t.sub, 'r', c.bodySize * 1.02, cH * 0.05);
-      this.y = y + cH * 0.1;
-      if (t.by) { this.y += cH * 0.06; put(t.by, 'r', c.bodySize * 0.94, cH * 0.02); y = this.y; }
-      if (t.date) { this.y += cH * 0.018; put(t.date, 'r', c.bodySize * 0.94, cH * 0.02); }
+      y += cH * 0.16;
+      if (t.by) put(t.by, 'r', c.bodySize * 0.94, cH * 0.03);
+      if (t.date) put(t.date, 'r', c.bodySize * 0.94, cH * 0.02);
+      this.y = this.m().t + cH * 0.82;
       this.rule(16, 0, 0);
     }
 
@@ -576,7 +644,7 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 4. Sample content
+   * 5. Sample content
    * ------------------------------------------------------------------ */
   const SAMPLE = [
     '# Caput I — In principio',
@@ -599,9 +667,9 @@
     '',
     'Dicit mater Iesu ad eum: Vinum non habent. Et dicit ei Iesus: Quid mihi et tibi est, mulier? nondum venit hora mea.',
     '',
-    '- Hydriae sex positae erant.
-    - Implevit eas usque ad summum.
-    - Et factum est vinum bonum.',
+    '- Hydriae sex positae erant.',
+    '- Implevit eas usque ad summum.',
+    '- Et factum est vinum bonum.',
     '',
     '---',
     '',
@@ -615,7 +683,7 @@
   ].join('\n');
 
   /* ------------------------------------------------------------------ *
-   * 5. Form <-> config
+   * 6. Form <-> config
    * ------------------------------------------------------------------ */
   function readCfg() {
     return {
@@ -644,30 +712,70 @@
     };
   }
 
+  /* ------------------------------------------------------------------ *
+   * 7. Persistence (localStorage)
+   * ------------------------------------------------------------------ */
+  function collect() {
+    const data = {};
+    for (const id of FIELDS) {
+      const el = $(id);
+      if (!el) continue;
+      data[id] = el.type === 'checkbox' ? el.checked : el.value;
+    }
+    return data;
+  }
+
   function saveState() {
+    clearTimeout(state.saveTimer);
+    state.saveTimer = null;
     try {
-      const data = {};
-      for (const id of FIELDS) {
-        const el = $(id);
-        if (!el) continue;
-        data[id] = el.type === 'checkbox' ? el.checked : el.value;
+      localStorage.setItem(STORE_KEY, JSON.stringify({ v: 2, saved: Date.now(), data: collect() }));
+    } catch (e) { /* private mode / quota — ignore */ }
+  }
+
+  function saveStateSoon() {
+    clearTimeout(state.saveTimer);
+    state.saveTimer = setTimeout(saveState, 300);
+  }
+
+  function applyState(data) {
+    if (!data || typeof data !== 'object') return false;
+    let touched = false;
+    for (const id of FIELDS) {
+      if (!(id in data)) continue;
+      const el = $(id);
+      if (!el) continue;
+      const v = data[id];
+      if (el.type === 'checkbox') {
+        el.checked = !!v;
+      } else if (el.tagName === 'SELECT') {
+        const ok = Array.prototype.some.call(el.options, function (o) { return o.value === String(v); });
+        if (ok) el.value = String(v);
+      } else if (el.type === 'color') {
+        if (/^#[0-9a-f]{6}$/i.test(String(v))) el.value = String(v);
+      } else {
+        el.value = (v === null || v === undefined) ? '' : String(v);
       }
-      localStorage.setItem('scg-replica', JSON.stringify(data));
-    } catch (e) { /* private mode — ignore */ }
+      touched = true;
+    }
+    return touched;
   }
 
   function loadState() {
     try {
-      const data = JSON.parse(localStorage.getItem('scg-replica') || 'null');
-      if (!data) return;
-      for (const id of FIELDS) {
-        if (!(id in data)) continue;
-        const el = $(id);
-        if (!el) continue;
-        if (el.type === 'checkbox') el.checked = !!data[id];
-        else el.value = data[id];
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return applyState(parsed && parsed.data ? parsed.data : parsed);
       }
-    } catch (e) { /* ignore */ }
+      const legacy = localStorage.getItem(LEGACY_KEY);   // migrate old key
+      if (legacy) {
+        const ok = applyState(JSON.parse(legacy));
+        if (ok) saveState();
+        return ok;
+      }
+    } catch (e) { /* corrupt or blocked storage — fall back to markup defaults */ }
+    return false;
   }
 
   function captureDefaults() {
@@ -678,19 +786,20 @@
   }
 
   /* ------------------------------------------------------------------ *
-   * 6. Generate
+   * 8. Generate
    * ------------------------------------------------------------------ */
-  function generate() {
+  async function generate() {
+    if (state.busy) return;
+    state.busy = true;
+    $('go').disabled = true;
     try {
-      const jsPDF = window.jspdf && window.jspdf.jsPDF;
-      if (typeof jsPDF !== 'function') {
-        throw new Error('jsPDF is not loaded. Reload the page with an internet connection.');
-      }
+      setStatus('Rendering…');
+      const JsPDF = await getJsPDF();
 
       const cfg = readCfg();
       const W = PAGE_W * cfg.scale, H = PAGE_H * cfg.scale;
 
-      const pdf = new jsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait', compress: true });
+      const pdf = new JsPDF({ unit: 'mm', format: [W, H], orientation: 'portrait', compress: true });
       pdf.setProperties({
         title: cfg.title || 'St Cuthbert Gospel',
         subject: cfg.sub || 'Replica',
@@ -703,18 +812,31 @@
       if (!book.started) book.newPage();
 
       const total = book.page + 1;
-      const blob = pdf.output('blob');
 
-      if (state.url) { URL.revokeObjectURL(state.url); state.url = null; }
+      /* typed PDF blob — 'blob' output can come back untyped in some builds,
+         which makes the iframe render blank */
+      let blob;
+      try {
+        const raw = pdf.output('arraybuffer');
+        blob = new Blob([raw], { type: 'application/pdf' });
+      } catch (e) {
+        blob = pdf.output('blob');
+        if (!blob.type) blob = new Blob([blob], { type: 'application/pdf' });
+      }
+
+      if (state.url) URL.revokeObjectURL(state.url);
       state.url = URL.createObjectURL(blob);
 
-      const frame = $('frame');
-      frame.src = state.url;
+      $('frame').src = state.url;
 
       const dl = $('dl');
       dl.href = state.url;
       dl.download = slug(cfg.title) + '-replica.pdf';
-      dl.setAttribute('aria-disabled', 'false');
+      dl.removeAttribute('aria-disabled');
+
+      const op = $('open');
+      op.href = state.url;
+      op.removeAttribute('aria-disabled');
 
       const tbW = W - (cfg.mIn + cfg.mOut) * cfg.scale;
       const tbH = H - (cfg.mTop + cfg.mBot) * cfg.scale;
@@ -740,15 +862,19 @@
       console.error(err);
       setStatus('Generation failed: ' + (err && err.message ? err.message : String(err)), true);
       $('dl').setAttribute('aria-disabled', 'true');
+      $('open').setAttribute('aria-disabled', 'true');
+    } finally {
+      state.busy = false;
+      $('go').disabled = false;
     }
   }
 
   /* ------------------------------------------------------------------ *
-   * 7. Wiring
+   * 9. Wiring
    * ------------------------------------------------------------------ */
   function scheduleGenerate() {
-    clearTimeout(state.timer);
-    state.timer = setTimeout(generate, 700);
+    clearTimeout(state.genTimer);
+    state.genTimer = setTimeout(generate, 900);
   }
 
   function bind() {
@@ -773,26 +899,39 @@
       generate();
     });
 
-    const onChange = function () { saveState(); scheduleGenerate(); };
+    const onChange = function () { saveStateSoon(); scheduleGenerate(); };
     for (const id of FIELDS) {
       const el = $(id);
       if (!el) continue;
       el.addEventListener('input', onChange);
       el.addEventListener('change', onChange);
     }
+
+    /* flush pending writes when the page goes away */
+    window.addEventListener('pagehide', saveState);
+    window.addEventListener('beforeunload', saveState);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) saveState(); });
+
+    /* keep tabs in sync */
+    window.addEventListener('storage', function (e) {
+      if (e.key !== STORE_KEY || !e.newValue) return;
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (applyState(parsed && parsed.data ? parsed.data : parsed)) scheduleGenerate();
+      } catch (_) { /* ignore */ }
+    });
   }
 
   function init() {
-    $('md').value = SAMPLE;
-    captureDefaults();
-    loadState();
-    bind();
+    $('md').value = SAMPLE;   // fallback content
+    captureDefaults();        // markup values become the reset target
+    loadState();              // saved work wins
+    bind();                   // ALWAYS bind, even if jsPDF is not available yet
 
-    if (!(window.jspdf && window.jspdf.jsPDF)) {
-      setStatus('jsPDF is not loaded — check your connection and reload.', true);
-      return;
-    }
-    generate();
+    setStatus('Loading jsPDF…');
+    getJsPDF().then(function () { generate(); }, function (err) {
+      setStatus('jsPDF not loaded — press “Generate PDF” to retry.\n' + err.message, true);
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
